@@ -20,10 +20,13 @@
 #ifndef QUICKSTEP_STORAGE_HASH_TABLE_HPP_
 #define QUICKSTEP_STORAGE_HASH_TABLE_HPP_
 
+#include <algorithm>
 #include <atomic>
 #include <cstddef>
 #include <cstdlib>
+#include <memory>
 #include <type_traits>
+#include <utility>
 #include <vector>
 
 #include "catalog/CatalogTypedefs.hpp"
@@ -39,6 +42,8 @@
 #include "types/Type.hpp"
 #include "types/TypedValue.hpp"
 #include "utility/BloomFilter.hpp"
+#include "utility/BloomFilterAdapter.hpp"
+#include "utility/EventProfiler.hpp"
 #include "utility/HashPair.hpp"
 #include "utility/Macros.hpp"
 
@@ -2246,26 +2251,19 @@ void HashTable<ValueT, resizable, serializable, force_key_copy, allow_duplicate_
   InvokeOnAnyValueAccessor(
       accessor,
       [&](auto *accessor) -> void {  // NOLINT(build/c++11)
+    std::unique_ptr<BloomFilterAdapter> bloom_filter_adapter = nullptr;
+    if (has_probe_side_bloom_filter_) {
+      bloom_filter_adapter.reset(
+          new BloomFilterAdapter(probe_bloom_filters_, probe_attribute_ids_));
+    }
+
+    auto *container = simple_profiler.getContainer();
+    auto *line = container->getEventLine("probe");
+    line->emplace_back();
     while (accessor->next()) {
-      // Probe any bloom filters, if enabled.
-      if (has_probe_side_bloom_filter_) {
-        DCHECK_EQ(probe_bloom_filters_.size(), probe_attribute_ids_.size());
-        // Check if the key is contained in the BloomFilters or not.
-        bool bloom_miss = false;
-        for (std::size_t i = 0; i < probe_bloom_filters_.size() && !bloom_miss; ++i) {
-          const BloomFilter *bloom_filter = probe_bloom_filters_[i];
-          for (const attribute_id &attr_id : probe_attribute_ids_[i]) {
-            TypedValue bloom_key = accessor->getTypedValue(attr_id);
-            if (!bloom_filter->contains(static_cast<const std::uint8_t*>(bloom_key.getDataPtr()),
-                                        bloom_key.getDataSize())) {
-              bloom_miss = true;
-              break;
-            }
-          }
-        }
-        if (bloom_miss) {
-          continue;  // On a bloom filter miss, probing the hash table can be skipped.
-        }
+      // Check if the key is contained in the BloomFilters or not.
+      if (has_probe_side_bloom_filter_ && bloom_filter_adapter->miss(accessor)) {
+        continue;
       }
 
       TypedValue key = accessor->getTypedValue(key_attr_id);
@@ -2285,6 +2283,8 @@ void HashTable<ValueT, resizable, serializable, force_key_copy, allow_duplicate_
         }
       }
     }
+    line->back().endEvent();
+    line->back().setPayload(0);
   });
 }
 
