@@ -1709,3 +1709,121 @@ SelectStatement
   |         +-TableReference[table=bar]
   +-from_clause=
     +-TableReference[table=test]
+==
+
+select avg(attr1) over w from test 
+window w as
+(partition by attr2, attr3
+ order by attr4
+ rows between 3 preceding and 3 following)
+--
+SelectStatement
++-select_query=Select
+  +-select_clause=SelectList
+  | +-SelectListItem
+  |   +-FunctionCall[name=avg,window_name=w]
+  |     +-AttributeReference[attribute_name=attr1]
+  +-from_clause=
+  | +-TableReference[table=test]
+  +-window_list=
+    +-window[window_name=w]
+      +-frame_info=FrameInfo[frame_mode=row,num_preceding=3,num_following=3]
+      +-partition_by=
+      | +-AttributeReference[attribute_name=attr2]
+      | +-AttributeReference[attribute_name=attr3]
+      +-order_by=
+        +-OrderByItem[is_asc=true,nulls_first=false]
+          +-AttributeReference[attribute_name=attr4]
+==
+
+select avg(attr1) over w from test 
+window w as
+(partition by attr2, attr3
+ order by attr4 desc nulls first, attr5 asc nulls last
+ range between 3 preceding and current row)
+--
+SelectStatement
++-select_query=Select
+  +-select_clause=SelectList
+  | +-SelectListItem
+  |   +-FunctionCall[name=avg,window_name=w]
+  |     +-AttributeReference[attribute_name=attr1]
+  +-from_clause=
+  | +-TableReference[table=test]
+  +-window_list=
+    +-window[window_name=w]
+      +-frame_info=FrameInfo[frame_mode=range,num_preceding=3,num_following=0]
+      +-partition_by=
+      | +-AttributeReference[attribute_name=attr2]
+      | +-AttributeReference[attribute_name=attr3]
+      +-order_by=
+        +-OrderByItem[is_asc=false,nulls_first=true]
+        | +-AttributeReference[attribute_name=attr4]
+        +-OrderByItem[is_asc=true,nulls_first=false]
+          +-AttributeReference[attribute_name=attr5]
+==
+
+select avg(attr1) over w1 as avg1, sum(attr5) over w2 as sum5 from test 
+window w1 as
+(partition by attr2, attr3
+ order by attr4
+ rows between 3 preceding and 3 following)
+window w2 as
+(partition by attr1
+ order by attr6
+ range between 2 preceding and current row)
+--
+SelectStatement
++-select_query=Select
+  +-select_clause=SelectList
+  | +-SelectListItem[alias=avg1]
+  | | +-FunctionCall[name=avg,window_name=w1]
+  | |   +-AttributeReference[attribute_name=attr1]
+  | +-SelectListItem[alias=sum5]
+  |   +-FunctionCall[name=sum,window_name=w2]
+  |     +-AttributeReference[attribute_name=attr5]
+  +-from_clause=
+  | +-TableReference[table=test]
+  +-window_list=
+    +-window[window_name=w1]
+    | +-frame_info=FrameInfo[frame_mode=row,num_preceding=3,num_following=3]
+    | +-partition_by=
+    | | +-AttributeReference[attribute_name=attr2]
+    | | +-AttributeReference[attribute_name=attr3]
+    | +-order_by=
+    |   +-OrderByItem[is_asc=true,nulls_first=false]
+    |     +-AttributeReference[attribute_name=attr4]
+    +-window[window_name=w2]
+      +-frame_info=FrameInfo[frame_mode=range,num_preceding=2,num_following=0]
+      +-partition_by=
+      | +-AttributeReference[attribute_name=attr1]
+      +-order_by=
+        +-OrderByItem[is_asc=true,nulls_first=false]
+          +-AttributeReference[attribute_name=attr6]
+==
+
+select avg(attr1) over 
+(partition by attr2, attr3
+ order by attr4 desc nulls first, attr5 asc nulls last
+ range between unbounded preceding and current row)
+from test
+--
+SelectStatement
++-select_query=Select
+  +-select_clause=SelectList
+  | +-SelectListItem
+  |   +-FunctionCall[name=avg]
+  |     +-AttributeReference[attribute_name=attr1]
+  |     +-window=window
+  |       +-frame_info=FrameInfo[frame_mode=range,num_preceding=-1,
+  |       | num_following=0]
+  |       +-partition_by=
+  |       | +-AttributeReference[attribute_name=attr2]
+  |       | +-AttributeReference[attribute_name=attr3]
+  |       +-order_by=
+  |         +-OrderByItem[is_asc=false,nulls_first=true]
+  |         | +-AttributeReference[attribute_name=attr4]
+  |         +-OrderByItem[is_asc=true,nulls_first=false]
+  |           +-AttributeReference[attribute_name=attr5]
+  +-from_clause=
+    +-TableReference[table=test]

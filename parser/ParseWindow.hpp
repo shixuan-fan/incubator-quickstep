@@ -1,0 +1,201 @@
+/**
+ *   Copyright 2016, Quickstep Research Group, Computer Sciences Department,
+ *     University of Wisconsin—Madison.
+ *
+ *   Licensed under the Apache License, Version 2.0 (the "License");
+ *   you may not use this file except in compliance with the License.
+ *   You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *   Unless required by applicable law or agreed to in writing, software
+ *   distributed under the License is distributed on an "AS IS" BASIS,
+ *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *   See the License for the specific language governing permissions and
+ *   limitations under the License.
+ **/
+
+#ifndef QUICKSTEP_PARSER_PARSE_WINDOW_HPP_
+#define QUICKSTEP_PARSER_PARSE_WINDOW_HPP_
+
+#include "parser/ParseExpression.hpp"
+#include "parser/ParseLiteralValue.hpp"
+#include "parser/ParseOrderBy.hpp"
+#include "parser/ParseTreeNode.hpp"
+#include "utility/PtrList.hpp"
+
+#include "glog/logging.h"
+
+namespace quickstep {
+
+/**
+ * @brief The information of the how the framing in the window is defined
+ **/
+struct ParseFrameInfo : ParseTreeNode {
+  /**
+   * @brief Constructor.
+   * @param row True if the frame mode is ROW, false if it is RANGE.
+   * @param num_pre The number of rows/value of range that is preceding
+   *                the current row in the frame.
+   * @param num_follow The number of rows/value of range that is following
+   *                   the current row in the frame.
+   **/  
+  ParseFrameInfo(const int line_number,
+                 const int column_number,
+                 bool row,
+                 NumericParseLiteralValue *num_pre,
+                 NumericParseLiteralValue *num_follow)
+      : ParseTreeNode(line_number, column_number),
+        is_row(row),
+        num_preceding(num_pre),
+        num_following(num_follow) {
+  }
+
+  std::string getName() const override { return "FrameInfo"; }
+
+  bool is_row;
+  std::unique_ptr<ParseLiteralValue> num_preceding;
+  std::unique_ptr<ParseLiteralValue> num_following;
+
+protected:
+  void getFieldStringItems(
+      std::vector<std::string> *inline_field_names,
+      std::vector<std::string> *inline_field_values,
+      std::vector<std::string> *non_container_child_field_names,
+      std::vector<const ParseTreeNode *> *non_container_child_fields,
+      std::vector<std::string> *container_child_field_names,
+      std::vector<std::vector<const ParseTreeNode *>> *container_child_fields)
+      const override {
+    inline_field_names->push_back("frame_mode");
+    inline_field_values->push_back(is_row ? "row" : "range");
+
+    inline_field_names->push_back("num_preceding");
+    inline_field_values->push_back(num_preceding->generateName());
+
+    inline_field_names->push_back("num_following");
+    inline_field_values->push_back(num_following->generateName());
+  }
+};
+
+/**
+ * @brief The parsed representation of a WINDOW definition.
+ **/
+class ParseWindow : public ParseTreeNode {
+ public:
+  /**
+   * @brief Constructor.
+   * @param line_number The line number of the first token of this WINDOW clause
+   *                    in the SQL statement.
+   * @param column_number The column number of the first token of this WINDOW
+   *                      clause in the SQL statement.
+   * @param partition_by_expressions Optional grouping expressions that might be
+   *                                 specified in the SQL statement. Similar to
+   *                                 GROUP BY with regular aggregates.
+   * @param order_by_expressions Optional ordering expressions that might be
+   *                             specified in the SQL statement.
+   * @param frame_info The information about framing.
+   **/
+  ParseWindow(const int line_number,
+              const int column_number,
+              PtrList<ParseExpression> *partition_by_expressions,
+              PtrList<ParseOrderByItem> *order_by_expressions,
+              ParseFrameInfo *frame_info)
+      : ParseTreeNode(line_number, column_number),
+        partition_by_expressions_(partition_by_expressions),
+        order_by_expressions_(order_by_expressions),
+        frame_info_(frame_info) {
+  }
+
+  /**
+   * @brief Destructor.
+   **/
+  ~ParseWindow() override {}
+
+  std::string getName() const override {
+    return "window";
+  }
+
+  /**
+   * @brief Grouping expressions.
+   **/
+  const PtrList<ParseExpression> *partition_by_expressions() const {
+    return partition_by_expressions_.get();
+  }
+
+  /**
+   * @brief Ordering expressions.
+   **/
+  const PtrList<ParseOrderByItem> *ordering_expressions() const {
+    return order_by_expressions_.get();
+  }
+
+  /**
+   * @brief Frame information.
+   **/
+  const ParseFrameInfo* frame_info() const {
+    return frame_info_.get();
+  }
+
+  /**
+   * @return The window name.
+   */
+  const ParseString* name() const {
+    return name_.get();
+  }
+
+  /**
+   * @brief Set the alias of the window.
+   * @param name The alias of the window.
+   **/
+  void setName(ParseString *name) {
+    name_.reset(std::move(name));
+  }
+
+ protected:
+  void getFieldStringItems(
+      std::vector<std::string> *inline_field_names,
+      std::vector<std::string> *inline_field_values,
+      std::vector<std::string> *non_container_child_field_names,
+      std::vector<const ParseTreeNode *> *non_container_child_fields,
+      std::vector<std::string> *container_child_field_names,
+      std::vector<std::vector<const ParseTreeNode *>> *container_child_fields)
+      const override {
+    if (name_ != nullptr) {
+      inline_field_names->push_back("window_name");
+      inline_field_values->push_back(name_->value());
+    }
+        
+    container_child_field_names->push_back("partition_by");
+    std::vector<const ParseTreeNode *> partition_by;
+    if (partition_by_expressions_ != nullptr) {
+      for (const auto &e : *partition_by_expressions_) {
+        partition_by.push_back(static_cast<const ParseTreeNode *>(&e));
+      }
+    }
+    container_child_fields->push_back(partition_by);
+
+    container_child_field_names->push_back("order_by");
+    std::vector<const ParseTreeNode *> order_by;
+    if (order_by_expressions_ != nullptr) {
+      for (const auto &e : *order_by_expressions_) {
+        order_by.push_back(static_cast<const ParseTreeNode *>(&e));
+      }
+    }
+    container_child_fields->push_back(order_by);
+
+    if (frame_info_ != nullptr) {
+      non_container_child_field_names->push_back("frame_info");      
+      non_container_child_fields->push_back(frame_info_.get());
+    }
+  }
+
+ private:
+  std::unique_ptr<PtrList<ParseExpression>> partition_by_expressions_;
+  std::unique_ptr<PtrList<ParseOrderByItem>> order_by_expressions_;
+  std::unique_ptr<ParseFrameInfo> frame_info_;
+  std::unique_ptr<ParseString> name_;
+};
+
+}  // namespace quickstep
+
+#endif  // QUICKSTEP_PARSER_PARSE_WINDOW_HPP_
