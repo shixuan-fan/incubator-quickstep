@@ -18,6 +18,9 @@
 #ifndef QUICKSTEP_PARSER_PARSE_WINDOW_HPP_
 #define QUICKSTEP_PARSER_PARSE_WINDOW_HPP_
 
+#include <string>
+#include <vector>
+
 #include "parser/ParseExpression.hpp"
 #include "parser/ParseLiteralValue.hpp"
 #include "parser/ParseOrderBy.hpp"
@@ -57,7 +60,7 @@ struct ParseFrameInfo : ParseTreeNode {
   std::unique_ptr<ParseLiteralValue> num_preceding;
   std::unique_ptr<ParseLiteralValue> num_following;
 
-protected:
+ protected:
   void getFieldStringItems(
       std::vector<std::string> *inline_field_names,
       std::vector<std::string> *inline_field_values,
@@ -164,7 +167,7 @@ class ParseWindow : public ParseTreeNode {
       inline_field_names->push_back("window_name");
       inline_field_values->push_back(name_->value());
     }
-        
+
     container_child_field_names->push_back("partition_by");
     std::vector<const ParseTreeNode *> partition_by;
     if (partition_by_expressions_ != nullptr) {
@@ -184,7 +187,7 @@ class ParseWindow : public ParseTreeNode {
     container_child_fields->push_back(order_by);
 
     if (frame_info_ != nullptr) {
-      non_container_child_field_names->push_back("frame_info");      
+      non_container_child_field_names->push_back("frame_info");
       non_container_child_fields->push_back(frame_info_.get());
     }
   }

@@ -136,6 +136,7 @@ target_link_libraries(quickstep_parser_ParseBasicExpressions
                       quickstep_parser_ParseLiteralValue
                       quickstep_parser_ParseString
                       quickstep_parser_ParseTreeNode
+                      quickstep_parser_ParseWindow
                       quickstep_types_operations_binaryoperations_BinaryOperation
                       quickstep_types_operations_unaryoperations_UnaryOperation
                       quickstep_utility_Macros
@@ -242,6 +243,7 @@ target_link_libraries(quickstep_parser_ParseSelect
                       quickstep_parser_ParseSelectionClause
                       quickstep_parser_ParseTableReference
                       quickstep_parser_ParseTreeNode
+                      quickstep_parser_ParseWindow
                       quickstep_utility_Macros
                       quickstep_utility_PtrList)
 target_link_libraries(quickstep_parser_ParseSelectionClause
@@ -302,10 +304,11 @@ target_link_libraries(quickstep_parser_ParseTreeNode
 target_link_libraries(quickstep_parser_ParserUtil
                       quickstep_utility_SqlError)
 target_link_libraries(quickstep_parser_ParseWindow
-                      quickstep_parser_ParseBasicExpressions
+                      quickstep_parser_ParseExpression
                       quickstep_parser_ParseLiteralValue
                       quickstep_parser_ParseOrderBy
-                      quickstep_parser_ParseTreeNode)
+                      quickstep_parser_ParseTreeNode
+                      quickstep_utility_PtrList)
 target_link_libraries(quickstep_parser_SqlLexer
                       quickstep_parser_ParseJoinedTableReference
                       quickstep_parser_ParseLiteralValue
@@ -344,6 +347,7 @@ target_link_libraries(quickstep_parser_SqlParser
                       quickstep_parser_ParseSubqueryTableReference
                       quickstep_parser_ParseTableReference
                       quickstep_parser_ParserUtil
+                      quickstep_parser_ParseWindow
                       quickstep_storage_StorageBlockInfo
                       quickstep_types_Type
                       quickstep_types_TypeFactory
