@@ -43,9 +43,9 @@ struct DecimalLit {
 
   data_type data_;
 
-  static constexpr std::uint64_t kPrecisionWidth = 4;
+  static constexpr std::int64_t kPrecisionWidth = 2;
 
-  static constexpr std::int64_t kMaxFractionInt = 10000;
+  static constexpr std::int64_t kMaxFractionInt = 100;
 
   inline std::uint64_t getFractionalPart() const {
     return static_cast<std::uint64_t>(static_cast<std::uint64_t>(std::abs(data_)) % kMaxFractionInt);
