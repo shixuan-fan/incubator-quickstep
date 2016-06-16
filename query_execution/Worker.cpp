@@ -63,7 +63,6 @@ void Worker::run() {
         line->emplace_back();
         message.getWorkOrder()->execute();
         line->back().endEvent();
-        container->startEvent(message.getRelationalOpIndex());
         const std::size_t query_id_for_workorder =
             message.getWorkOrder()->getQueryID();
         delete message.getWorkOrder();

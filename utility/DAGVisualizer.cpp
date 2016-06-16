@@ -28,6 +28,7 @@
 #include <vector>
 
 #include "query_optimizer/QueryPlan.hpp"
+#include "utility/EventProfiler.hpp"
 #include "utility/StringUtil.hpp"
 
 #include "glog/logging.h"
@@ -48,22 +49,34 @@ std::string DAGVisualizer::toDOT() {
 
   std::vector<double> time_elapsed(num_nodes, 0);
   std::vector<double> time_percentage(num_nodes, 0);
+  std::vector<double> time_start(num_nodes, std::numeric_limits<double>::max());
+  std::vector<double> time_end(num_nodes, 0);
+  const auto &zero_time = relop_profiler.zero_time();
   for (const auto &container : relop_profiler.containers()) {
     for (const auto &line : container.second.events) {
+      const std::size_t relop_index = line.first;
       for (const auto &event : line.second) {
-        time_elapsed[line.first] +=
-            std::chrono::duration<double>(event.start_time - event.end_time).count();
+        time_elapsed[relop_index] +=
+            std::chrono::duration<double>(event.end_time - event.start_time).count();
+        time_start[relop_index] =
+            std::min(time_start[relop_index],
+                     std::chrono::duration<double>(event.start_time - zero_time).count());
+        time_end[relop_index] =
+            std::max(time_end[relop_index],
+                     std::chrono::duration<double>(event.end_time - zero_time).count());
       }
     }
   }
   const std::size_t num_threads = relop_profiler.containers().size();
   double total_time_elapsed = 0;
+  double max_percentage = 0;
   for (std::size_t i = 0; i < time_elapsed.size(); ++i) {
     time_elapsed[i] /= num_threads;
     total_time_elapsed += time_elapsed[i];
   }
   for (std::size_t i = 0; i < time_elapsed.size(); ++i) {
     time_percentage[i] = time_elapsed[i] / total_time_elapsed;
+    max_percentage = std::max(max_percentage, time_percentage[i]);
   }
 
   std::vector<bool> display_ops(num_nodes, false);
@@ -71,12 +84,23 @@ std::string DAGVisualizer::toDOT() {
     const std::string relop_name = dag.getNodePayload(node_index).getName();
     if (no_display_op_names.find(relop_name) == no_display_op_names.end()) {
       display_ops[node_index] = true;
+
       nodes_.emplace_back();
       NodeInfo &node_info = nodes_.back();
       node_info.id = node_index;
+
+      std::string hue =
+          std::to_string(time_percentage[node_index] / max_percentage);
+      node_info.color = hue + " " + hue + " 1.0";
+
       node_info.labels.emplace_back(relop_name);
       node_info.labels.emplace_back(
-          std::to_string(std::lround(time_elapsed[node_index] / 100)));
+          std::to_string(std::lround(time_elapsed[node_index] * 1000)) +
+          "ms (" + PercentageToString(time_percentage[node_index] * 100) + "%)");
+      node_info.labels.emplace_back(
+          "span: [" +
+          std::to_string(std::lround(time_start[node_index] * 1000)) + "ms, " +
+          std::to_string(std::lround(time_end[node_index] * 1000)) + "ms]");
     }
   }
   for (std::size_t node_index = 0; node_index < num_nodes; ++node_index) {
@@ -133,6 +157,14 @@ std::string DAGVisualizer::toDOT() {
   graph_oss << "}\n";
 
   return graph_oss.str();
+}
+
+std::string DAGVisualizer::PercentageToString(double percentage) {
+  std::ostringstream oss;
+  oss << static_cast<std::uint32_t>(percentage) << ".";
+  int digits = std::lround(percentage * 10000) % 100;
+  oss << digits / 10 << digits % 10;
+  return oss.str();
 }
 
 }  // namespace quickstep

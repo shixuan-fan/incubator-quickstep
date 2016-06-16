@@ -49,6 +49,8 @@ class DAGVisualizer {
   std::string toDOT();
 
  private:
+  static std::string PercentageToString(double percentage);
+
   /**
    * @brief Information of a graph node.
    */

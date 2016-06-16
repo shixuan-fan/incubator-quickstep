@@ -47,7 +47,7 @@ class EventProfiler {
 
  public:
   EventProfiler()
-      : zero_time(clock::now()) {
+      : zero_time_(clock::now()) {
   }
 
   struct EventInfo {
@@ -117,9 +117,9 @@ class EventProfiler {
 
           PrintTuple(event_info.payload, ",");
 
-          os << std::chrono::duration<double>(event_info.start_time - zero_time).count()
+          os << std::chrono::duration<double>(event_info.start_time - zero_time_).count()
              << ","
-             << std::chrono::duration<double>(event_info.end_time - zero_time).count()
+             << std::chrono::duration<double>(event_info.end_time - zero_time_).count()
              << "\n";
         }
       }
@@ -128,12 +128,16 @@ class EventProfiler {
   }
 
   void clear() {
-    zero_time = clock::now();
+    zero_time_ = clock::now();
     thread_map_.clear();
   }
 
   const std::map<std::thread::id, EventContainer> &containers() {
     return thread_map_;
+  }
+
+  const clock::time_point &zero_time() {
+    return zero_time_;
   }
 
  private:
@@ -157,7 +161,7 @@ class EventProfiler {
     TuplePrinter<decltype(t), sizeof...(Args)>::Print(t, sep);
   }
 
-  clock::time_point zero_time;
+  clock::time_point zero_time_;
   std::map<std::thread::id, EventContainer> thread_map_;
   Mutex mutex_;
 };
