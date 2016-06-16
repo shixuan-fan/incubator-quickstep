@@ -4763,7 +4763,7 @@ yyreduce:
   case 168:
 #line 1419 "../SqlParser.ypp" /* yacc.c:1646  */
     {
-    (yyval.window_frame_info_) = new quickstep::ParseFrameInfo((yylsp[-4]).first_line, (yylsp[-4]).first_column, (yyvsp[-4].boolean_value_), (yyvsp[-2].numeric_literal_value_), (yyvsp[0].numeric_literal_value_));
+    (yyval.window_frame_info_) = new quickstep::ParseFrameInfo((yylsp[-4]).first_line, (yylsp[-4]).first_column, (yyvsp[-4].boolean_value_), (yyvsp[-2].numeric_literal_value_)->long_value(), (yyvsp[0].numeric_literal_value_)->long_value());
   }
 #line 4769 "SqlParser_gen.cpp" /* yacc.c:1646  */
     break;

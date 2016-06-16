@@ -46,8 +46,8 @@ struct ParseFrameInfo : ParseTreeNode {
   ParseFrameInfo(const int line_number,
                  const int column_number,
                  bool row,
-                 NumericParseLiteralValue *num_pre,
-                 NumericParseLiteralValue *num_follow)
+                 long num_pre,
+                 long num_follow)
       : ParseTreeNode(line_number, column_number),
         is_row(row),
         num_preceding(num_pre),
@@ -57,8 +57,8 @@ struct ParseFrameInfo : ParseTreeNode {
   std::string getName() const override { return "FrameInfo"; }
 
   bool is_row;
-  std::unique_ptr<ParseLiteralValue> num_preceding;
-  std::unique_ptr<ParseLiteralValue> num_following;
+  long num_preceding;
+  long num_following;
 
  protected:
   void getFieldStringItems(
@@ -73,10 +73,10 @@ struct ParseFrameInfo : ParseTreeNode {
     inline_field_values->push_back(is_row ? "row" : "range");
 
     inline_field_names->push_back("num_preceding");
-    inline_field_values->push_back(num_preceding->generateName());
+    inline_field_values->push_back(std::to_string(num_preceding));
 
     inline_field_names->push_back("num_following");
-    inline_field_values->push_back(num_following->generateName());
+    inline_field_values->push_back(std::to_string(num_following));
   }
 };
 
