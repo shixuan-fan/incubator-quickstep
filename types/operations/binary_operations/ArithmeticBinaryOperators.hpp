@@ -167,7 +167,7 @@ struct MultiplyFunctor<float, std::int64_t> {
 template <>
 struct MultiplyFunctor<DecimalLit, DecimalLit> {
   inline DecimalLit operator() (const DecimalLit &left, const DecimalLit &right) const {
-    return left / right;
+    return left * right;
   }
 };
 
