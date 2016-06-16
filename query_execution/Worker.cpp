@@ -27,6 +27,7 @@
 #include "relational_operators/WorkOrder.hpp"
 #include "threading/ThreadIDBasedMap.hpp"
 #include "threading/ThreadUtil.hpp"
+#include "utility/EventProfiler.hpp"
 
 #include "glog/logging.h"
 
@@ -57,7 +58,12 @@ void Worker::run() {
       case kRebuildWorkOrderMessage: {
         WorkerMessage message(*static_cast<const WorkerMessage*>(tagged_message.message()));
         DCHECK(message.getWorkOrder() != nullptr);
+        auto *container = relop_profiler.getContainer();
+        auto *line = container->getEventLine(message.getRelationalOpIndex());
+        line->emplace_back();
         message.getWorkOrder()->execute();
+        line->back().endEvent();
+        container->startEvent(message.getRelationalOpIndex());
         const std::size_t query_id_for_workorder =
             message.getWorkOrder()->getQueryID();
         delete message.getWorkOrder();

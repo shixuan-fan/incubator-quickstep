@@ -59,7 +59,7 @@ class RelationalOperator {
    *
    * @return The name of this relational operator.
    */
-  virtual std::string getName() = 0;
+  virtual std::string getName() const = 0;
 
   /**
    * @brief Generate all the next WorkOrders for this RelationalOperator.

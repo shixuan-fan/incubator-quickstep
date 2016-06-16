@@ -75,6 +75,7 @@ typedef quickstep::LineReaderDumb LineReaderImpl;
 
 #include "storage/PreloaderThread.hpp"
 #include "threading/ThreadIDBasedMap.hpp"
+#include "utility/DAGVisualizer.hpp"
 #include "utility/EventProfiler.hpp"
 #include "utility/Macros.hpp"
 #include "utility/PtrVector.hpp"
@@ -185,6 +186,8 @@ DEFINE_string(profile_file_name, "",
               // run at least a hundred times to make the impact of the first run small (< 5 %).
 DEFINE_string(profile_output, "",
               "Output file name for writing the profiled events.");
+DEFINE_bool(visualize_dag, false,
+            "If true, visualize the execution plan DAG into a graph in DOT format.");
 
 }  // namespace quickstep
 
@@ -432,6 +435,7 @@ int main(int argc, char* argv[]) {
         }
 
         DCHECK(query_handle->getQueryPlanMutable() != nullptr);
+        quickstep::relop_profiler.clear();
         start = std::chrono::steady_clock::now();
         QueryExecutionUtil::ConstructAndSendAdmitRequestMessage(
             main_thread_client_id,
@@ -443,6 +447,11 @@ int main(int argc, char* argv[]) {
           QueryExecutionUtil::ReceiveQueryCompletionMessage(
               main_thread_client_id, &bus);
           end = std::chrono::steady_clock::now();
+
+          if (quickstep::FLAGS_visualize_dag) {
+            quickstep::DAGVisualizer visualizer(*query_handle->getQueryPlanMutable());
+            std::cerr << "\n" << visualizer.toDOT() << "\n";
+          }
 
           const CatalogRelation *query_result_relation = query_handle->getQueryResultRelation();
           if (query_result_relation) {
