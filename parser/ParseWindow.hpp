@@ -128,7 +128,7 @@ class ParseWindow : public ParseTreeNode {
   /**
    * @brief Ordering expressions.
    **/
-  const PtrList<ParseOrderByItem> *ordering_expressions() const {
+  const PtrList<ParseOrderByItem> *order_by_expressions() const {
     return order_by_expressions_.get();
   }
 
