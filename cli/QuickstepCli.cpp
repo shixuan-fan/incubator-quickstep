@@ -59,6 +59,7 @@ typedef quickstep::LineReaderDumb LineReaderImpl;
 #include "parser/SqlParserWrapper.hpp"
 #include "query_execution/AdmitRequestMessage.hpp"
 #include "query_execution/Foreman.hpp"
+#include "query_execution/QueryExecutionConfig.h"  // For QUICKSTEP_ENABLE_WORKORDER_PROFILING
 #include "query_execution/QueryExecutionTypedefs.hpp"
 #include "query_execution/QueryExecutionUtil.hpp"
 #include "query_execution/Worker.hpp"
@@ -461,6 +462,10 @@ int main(int argc, char* argv[]) {
           printf("Time: %s ms\n",
                  quickstep::DoubleToStringWithSignificantDigits(
                      time_ms.count(), 3).c_str());
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+          // TODO(harshad) - Allow user specified file instead of stdout.
+          foreman.printWorkOrderProfilingResults(stdout);
+#endif
         } catch (const std::exception &e) {
           fprintf(stderr, "QUERY EXECUTION ERROR: %s\n", e.what());
           break;

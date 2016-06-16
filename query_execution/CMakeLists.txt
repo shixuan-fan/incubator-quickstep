@@ -1,5 +1,7 @@
 #   Copyright 2011-2015 Quickstep Technologies LLC.
 #   Copyright 2015-2016 Pivotal Software, Inc.
+#   Copyright 2016, Quickstep Research Group, Computer Sciences Department, 
+#     University of Wisconsin—Madison.
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -19,11 +21,22 @@ QS_PROTOBUF_GENERATE_CPP(queryexecution_QueryExecutionMessages_proto_srcs
                          queryexecution_QueryExecutionMessages_proto_hdrs
                          QueryExecutionMessages.proto)
 
+if (ENABLE_WORKORDER_PROFILING)
+  set(QUICKSTEP_ENABLE_WORKORDER_PROFILING TRUE)
+else()
+  set(QUICKSTEP_ENABLE_WORKORDER_PROFILING FALSE)
+endif()  
+
 if (BUILD_SHARED_LIBS)
   set(GFLAGS_LIB_NAME gflags_nothreads-shared)
 else()
   set(GFLAGS_LIB_NAME gflags_nothreads-static)
 endif()
+
+configure_file (
+  "${CMAKE_CURRENT_SOURCE_DIR}/QueryExecutionConfig.h.in"
+  "${CMAKE_CURRENT_BINARY_DIR}/QueryExecutionConfig.h"
+)
 
 # Declare micro-libs:
 if (ENABLE_DISTRIBUTED)

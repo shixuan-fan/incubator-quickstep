@@ -229,4 +229,22 @@ void Foreman::sendWorkerMessage(const size_t worker_thread_index,
       << worker_directory_->getClientID(worker_thread_index);
 }
 
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+void Foreman::printWorkOrderProfilingResults(std::FILE *out) const {
+  const std::vector<
+      std::tuple<std::size_t, std::size_t, std::size_t, std::size_t>>
+      &recorded_times = policy_enforcer_->getProfilingResults();
+  fputs("Worker ID, NUMA Socket, Query ID, Operator ID, Time (microseconds)\n", out);
+  for (auto workorder_entry : recorded_times) {
+    // Note: Index of the "worker thread index" in the tuple is 0.
+    const std::size_t worker_id = std::get<0>(workorder_entry);
+    fprintf(out, "%lu,", worker_id);
+    fprintf(out, "%d,", worker_directory_->getNUMANode(worker_id));
+    fprintf(out, "%lu,", std::get<1>(workorder_entry));
+    fprintf(out, "%lu,", std::get<2>(workorder_entry));
+    fprintf(out, "%lu\n", std::get<3>(workorder_entry));
+  }
+}
+#endif
+
 }  // namespace quickstep

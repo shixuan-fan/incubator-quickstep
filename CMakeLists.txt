@@ -185,6 +185,11 @@ if (ENABLE_GOOGLE_PROFILER)
   set(LIBS ${LIBS} profiler)
 endif()
 
+# This option enables profiling individual work order performances. If enabled, 
+# at the end of each query execution, we print on stdout in CSV format the 
+# statistics about every work order that was executed. 
+option(ENABLE_WORKORDER_PROFILING "Enable profiling individual WorkOrder execution" OFF)
+
 # Link against the system's threading library.
 find_package(Threads REQUIRED)
 set(LIBS ${LIBS} ${CMAKE_THREAD_LIBS_INIT})

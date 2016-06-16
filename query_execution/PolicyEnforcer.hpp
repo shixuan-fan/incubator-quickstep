@@ -24,6 +24,12 @@
 #include <unordered_map>
 #include <vector>
 
+#include "query_execution/QueryExecutionConfig.h"
+
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+#include <tuple>
+#endif
+
 #include "query_execution/QueryExecutionTypedefs.hpp"
 #include "query_execution/QueryManager.hpp"
 #include "query_execution/WorkerMessage.hpp"
@@ -143,8 +149,34 @@ class PolicyEnforcer {
     return !(admitted_queries_.empty() && waiting_queries_.empty());
   }
 
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+  /**
+   * @brief Get the profiling results for individual work order execution.
+   **/
+  inline const std::vector<
+      std::tuple<std::size_t, std::size_t, std::size_t, std::size_t>>&
+      getProfilingResults() const {
+    return workorder_time_recorder_;
+  }
+#endif
+
  private:
   static constexpr std::size_t kMaxConcurrentQueries = 1;
+
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+  /**
+   * @brief Record the execution time for a finished WorkOrder.
+   *
+   * TODO(harshad) - Extend the functionality to rebuild work orders.
+   *
+   * @param proto The completion message proto sent after the WorkOrder
+   *        execution.
+   **/
+  void recordTimeForWorkOrder(
+      const serialization::NormalWorkOrderCompletionMessage &proto);
+
+  void resetTimeRecord();
+#endif
 
   const tmb::client_id foreman_client_id_;
   const std::size_t num_numa_nodes_;
@@ -160,6 +192,15 @@ class PolicyEnforcer {
 
   // The queries which haven't been admitted yet.
   std::queue<QueryHandle*> waiting_queries_;
+
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+  // Each entry indicates a record of executing a work order.
+  // 1st element: Logical worker ID.
+  // 2nd element: Query ID.
+  // 2nd element: Operator ID.
+  // 3rd element: Time in microseconds to execute the work order.
+  std::vector<std::tuple<std::size_t, std::size_t, std::size_t, std::size_t>> workorder_time_recorder_;
+#endif
 
   DISALLOW_COPY_AND_ASSIGN(PolicyEnforcer);
 };

@@ -76,6 +76,9 @@ void PolicyEnforcer::processMessage(const TaggedMessage &tagged_message) {
       query_id = proto.query_id();
       worker_directory_->decrementNumQueuedWorkOrders(
           proto.worker_thread_index());
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+      recordTimeForWorkOrder(proto);
+#endif
       break;
     }
     case kRebuildWorkOrderCompleteMessage: {
@@ -196,5 +199,15 @@ bool PolicyEnforcer::admitQueries(
   }
   return true;
 }
+
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+void PolicyEnforcer::recordTimeForWorkOrder(
+    const serialization::NormalWorkOrderCompletionMessage &proto) {
+  workorder_time_recorder_.emplace_back(proto.worker_thread_index(),
+                                        proto.query_id(),
+                                        proto.operator_index(),
+                                        proto.execution_time_in_microseconds());
+}
+#endif
 
 }  // namespace quickstep

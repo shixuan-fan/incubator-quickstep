@@ -18,6 +18,13 @@
 #ifndef QUICKSTEP_QUERY_EXECUTION_FOREMAN_HPP_
 #define QUICKSTEP_QUERY_EXECUTION_FOREMAN_HPP_
 
+#include "query_execution/QueryExecutionConfig.h"
+
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+#include <cstdio>
+#include <tuple>
+#endif
+
 #include <cstddef>
 #include <memory>
 #include <vector>
@@ -70,6 +77,19 @@ class Foreman final : public ForemanLite {
           const std::size_t num_numa_nodes = 1);
 
   ~Foreman() override {}
+
+#ifdef QUICKSTEP_ENABLE_WORKORDER_PROFILING
+  /**
+   * @brief Print the results of profiling individual work orders.
+   *
+   * TODO(harshad) - Add the name of the operator to the output.
+   * TODO(harshad) - Add the CPU core ID of the operator to the output. This
+   * will require modifying the WorkerDirectory to remember worker affinities.
+   *
+   * @param out The file stream.
+   **/
+  void printWorkOrderProfilingResults(std::FILE *out) const;
+#endif
 
  protected:
   void run() override;
