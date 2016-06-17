@@ -29,6 +29,7 @@ add_library(quickstep_types_operations_unaryoperations_UnaryOperationID UnaryOpe
 target_link_libraries(quickstep_types_operations_unaryoperations_ArithmeticUnaryOperations
                       glog
                       quickstep_types_DatetimeIntervalType
+                      quickstep_types_DecimalType
                       quickstep_types_DoubleType
                       quickstep_types_FloatType
                       quickstep_types_IntType
